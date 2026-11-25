@@ -4,7 +4,7 @@ Paste a video link, preview it, pick a quality and download it. The server strea
 
 This is the Next.js version of the original Express + Vite project. Everything is now **one app**: the pages and the API live together, so there is no separate backend, no CORS and no proxy.
 
-**Status (V1.1):** YouTube, TikTok and Instagram use yt-dlp. Facebook, X and Pinterest are recognised but not available yet.
+**Status:** YouTube, TikTok, Instagram, Facebook and Snapchat (public Spotlight) use yt-dlp. X and Pinterest are recognised but not available yet.
 
 ## Prerequisites
 - Node.js 20 or newer
