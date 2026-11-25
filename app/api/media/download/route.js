@@ -5,6 +5,7 @@ import { resolveSupportedMedia } from "@/lib/server/media";
 import { sanitizeFilename, contentDisposition } from "@/lib/server/filename";
 import { translateYtDlpError } from "@/lib/server/ytDlp";
 import { env } from "@/lib/server/env";
+import { openDirectStream } from "@/lib/server/directFetch";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,6 +33,25 @@ export const GET = handle(async (request) => {
   let job;
   try {
     job = await platform.prepareDownload(url, String(params.get("option") || ""));
+    if (job.direct) {
+      // Fast path: stream the file straight from the platform's CDN (no second yt-dlp run, and the browser gets a size).
+      const stream = await openDirectStream(job.direct, request, release);
+      if (stream) {
+        console.log("[timing] direct download started");
+        return new Response(stream.body, {
+          status: 200,
+          headers: {
+            "Content-Type": job.contentType,
+            "Content-Disposition": contentDisposition(`${sanitizeFilename(params.get("title"))}.${job.ext}`),
+            "Cache-Control": "no-store",
+            "X-Content-Type-Options": "nosniff",
+            ...(stream.length ? { "Content-Length": stream.length } : {}),
+          },
+        });
+      }
+      console.log("[timing] direct download unavailable, using yt-dlp instead");
+      job = await job.fallback();
+    }
   } catch (err) {
     release();
     throw err;
